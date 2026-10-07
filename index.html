@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Neon Orbit: Arena Clash — Multiplayer Game</title>
+  <meta name="description" content="A real-time zero-install multiplayer arcade arena. Join with a room code or open directory from any phone or laptop!">
+  <meta name="theme-color" content="#060713">
+  
+  <!-- Open Graph for Link Sharing -->
+  <meta property="og:title" content="Neon Orbit: Arena Clash">
+  <meta property="og:description" content="Fast-paced multiplayer arcade arena. Outmaneuver friends or test vs AI bots!">
+  <meta property="og:type" content="website">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="./src/client/styles.css">
+</head>
+<body>
+
+  <!-- File Protocol Auto-Redirect & Notice (Shown only if opened as file://) -->
+  <div id="file-protocol-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #060713; color: #fff; z-index: 999999; font-family: 'Inter', -apple-system, sans-serif; text-align: center; padding: 2rem; box-sizing: border-box; flex-direction: column; align-items: center; justify-content: center;">
+    <div style="background: rgba(13, 17, 36, 0.95); border: 1.5px solid #00f0ff; border-radius: 20px; padding: 2.2rem; max-width: 520px; box-shadow: 0 0 40px rgba(0, 240, 255, 0.3);">
+      <h1 style="color: #00f0ff; margin-bottom: 0.4rem; font-size: 2rem; font-family: 'Orbitron', sans-serif; letter-spacing: 2px;">NEON ORBIT</h1>
+      <p style="color: #ffe600; font-weight: 800; margin-bottom: 1.2rem; font-size: 1rem; letter-spacing: 1px;">⚡ REDIRECTING TO LIVE SERVER...</p>
+      <p style="color: #8e9bb5; line-height: 1.5; margin-bottom: 1.8rem; font-size: 0.92rem;">
+        You opened <code>index.html</code> directly from your file system (<code>file://</code>). Multiplayer games require the local server to sync real-time players, bots, and physics.
+      </p>
+      <a id="file-link-play" href="http://localhost:3001" style="display: block; width: 100%; padding: 0.95rem; background: linear-gradient(135deg, #00f0ff, #00ffaa); color: #060713; font-weight: 900; font-size: 1.05rem; border-radius: 12px; text-decoration: none; margin-bottom: 1rem; box-shadow: 0 0 20px rgba(0, 240, 255, 0.4); text-transform: uppercase;">
+        🎮 Click Here to Play (http://localhost:3001)
+      </a>
+      <p style="color: #8e9bb5; font-size: 0.8rem; margin-top: 1rem;">
+        💡 You can also double-click <b>PLAY_NEON_ORBIT.url</b> in your project folder!
+      </p>
+    </div>
+  </div>
+
+  <script>
+    if (window.location.protocol === 'file:') {
+      const modal = document.getElementById('file-protocol-modal');
+      if (modal) modal.style.display = 'flex';
+      // Attempt auto-redirect to live server
+      setTimeout(() => {
+        window.location.href = 'http://localhost:3001';
+      }, 800);
+    }
+  </script>
+
+  <!-- Game Arena Canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- In-Game HUD -->
+  <div id="game-hud" style="display: none;">
+    <div class="hud-top">
+      <div class="hud-badge">
+        <span style="color:#8892b0;font-size:0.75rem;font-weight:700;">COLLAPSE IN</span>
+        <div id="hud-timer" class="timer-box">75</div>
+      </div>
+
+      <div class="hud-badge">
+        <div id="hud-leaderboard" class="hud-leaderboard">
+          <!-- Dynamically populated scores -->
+        </div>
+      </div>
+
+      <div class="hud-badge">
+        <span id="hud-ping" style="color:#39ff14;font-size:0.8rem;font-weight:700;">🟢 20ms</span>
+        <button id="btn-toggle-sound" class="sound-toggle-btn" title="Toggle Sound">🔊</button>
+      </div>
+    </div>
+
+    <div class="hud-bottom">
+      <div class="boost-label">BOOST THRUSTER CHARGE</div>
+      <div class="boost-bar-container">
+        <div id="boost-bar-fill" class="boost-bar-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Big Countdown Text -->
+  <div id="countdown-display">3</div>
+
+  <!-- Mobile Touch Controls -->
+  <div id="mobile-controls">
+    <div id="touch-zone-left"></div>
+    <div id="joystick-base">
+      <div id="joystick-knob"></div>
+    </div>
+
+    <div class="mobile-action-buttons">
+      <button id="btn-touch-boost" class="touch-action-btn boost-btn">BOOST</button>
+      <button id="btn-touch-pulse" class="touch-action-btn pulse-btn">PULSE</button>
+    </div>
+  </div>
+
+  <!-- 1. EDITORIAL LANDING SCREEN -->
+  <div id="screen-landing" class="overlay-screen">
+    <div class="landing-container">
+      
+      <!-- Top Branding -->
+      <header class="landing-header">
+        <div class="brand-badge">⚡ HANDSHAKE X OPENAI CHALLENGE ENTRY</div>
+        <h1 class="main-title">NEON ORBIT</h1>
+        <div class="main-tagline">REAL-TIME MULTIPLAYER ARENA • 2–8 PILOTS</div>
+      </header>
+
+      <!-- Main Two-Column Layout -->
+      <div class="landing-grid">
+        
+        <!-- Left: Crew Access Panel -->
+        <div class="glass-panel access-panel">
+          <div class="panel-tag">COSMIC CRISIS SIMULATOR</div>
+          <h2 class="panel-heading">ORBIT HARD. PULSE EARLY. SURVIVE THE COLLAPSE.</h2>
+          <p class="panel-subtext">
+            Outmaneuver friends in high-velocity kinetic combat. No logins. No app installs. Replayable any night from any phone or laptop.
+          </p>
+
+          <div class="input-group">
+            <label class="input-label" for="input-nickname">Pilot Call-Sign</label>
+            <input type="text" id="input-nickname" class="neon-input" placeholder="e.g. Maverick" maxlength="12" spellcheck="false" autocomplete="nickname">
+          </div>
+
+          <div class="action-buttons-group">
+            <button id="btn-create-room" class="btn-primary">CREATE A ROOM</button>
+            <button id="btn-solo-bots" class="btn-bot-solo">🤖 PLAY SOLO PRACTICE (VS AI BOTS)</button>
+          </div>
+
+          <div class="divider"><span>OR JOIN WITH CODE</span></div>
+
+          <div class="join-code-row">
+            <input type="text" id="input-room-code" class="neon-input code-input" placeholder="CODE" maxlength="4" spellcheck="false" autocomplete="off">
+            <button id="btn-join-room" class="btn-secondary join-btn">JOIN</button>
+          </div>
+
+          <div class="footnote-card">
+            Separate devices. Same table. No account needed. <b>Refreshing reconnects you.</b>
+          </div>
+        </div>
+
+        <!-- Right: The Rules (Editorial Guide) -->
+        <div class="glass-panel rules-panel">
+          <div class="panel-tag">OPERATIONAL BRIEFING</div>
+          <h2 class="rules-heading">A Little Thrust. A Lot of Shockwaves.</h2>
+
+          <div class="rule-card">
+            <div class="rule-num">1</div>
+            <div class="rule-content">
+              <h4>STEER & GATHER</h4>
+              <p>Glide across the neon arena to collect cosmic energy orbs and supercharge your thruster boost.</p>
+            </div>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-num">2</div>
+            <div class="rule-content">
+              <h4>PULSE & DISRUPT</h4>
+              <p>Blast rivals with kinetic shockwaves ([Space] or Tap) and shove them into the electric boundary.</p>
+            </div>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-num">3</div>
+            <div class="rule-content">
+              <h4>OUTLAST THE COLLAPSE</h4>
+              <p>In the final 30 seconds, the hazard ring contracts inward. Highest score after 75s claims the podium.</p>
+            </div>
+          </div>
+
+          <div class="controls-guide">
+            <div class="control-col">
+              <span class="control-platform">💻 LAPTOP</span>
+              <span>[WASD] / Arrows: Steer</span>
+              <span>[Space]: Pulse Shockwave</span>
+              <span>[Shift]: Thruster Boost</span>
+            </div>
+            <div class="control-col">
+              <span class="control-platform">📱 PHONE / TABLET</span>
+              <span>Left Screen Drag: Dynamic Joystick</span>
+              <span>Right Buttons: Boost & Pulse</span>
+              <span>Zero-Install Instant Web App</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom: Live Directory of Open Rooms (Like Panic Protocol) -->
+      <section class="directory-section">
+        <div class="directory-header">
+          <div class="directory-title">
+            <span class="live-dot"></span> LIVE DIRECTORY • OPEN ROOMS
+          </div>
+          <span style="color:var(--text-muted);font-size:0.8rem;">Auto-refreshed via Socket.io</span>
+        </div>
+
+        <div class="directory-table-container">
+          <table class="directory-table">
+            <thead>
+              <tr>
+                <th>ROOM CODE</th>
+                <th>COMMANDER</th>
+                <th>PILOTS</th>
+                <th>STATUS</th>
+                <th>ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="directory-tbody">
+              <tr>
+                <td colspan="5" class="empty-table-msg">No open public rooms right now. Create one above or launch solo practice!</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- 2. LOBBY / WAITING ROOM SCREEN -->
+  <div id="screen-lobby" class="overlay-screen hidden">
+    <div class="glass-card">
+      <h1 class="game-title">ROOM LOBBY</h1>
+      <div class="subtitle">Share the code or scan with phone camera to join!</div>
+
+      <div class="room-code-badge">
+        <span id="lobby-room-code" class="room-code-text">NEON</span>
+        <button id="btn-copy-link" class="btn-copy">📋 Copy Link</button>
+      </div>
+
+      <!-- Scannable QR Code -->
+      <div id="qr-container">
+        <canvas id="qr-canvas" width="128" height="128"></canvas>
+      </div>
+
+      <div class="input-label" style="text-align:center;margin-top:0.6rem;">
+        Connected Pilots (<span id="lobby-player-count">1</span>/8)
+      </div>
+      <div id="lobby-roster" class="player-roster">
+        <!-- Roster items injected via JS -->
+      </div>
+
+      <!-- Bot Management Controls -->
+      <div class="bot-controls-row">
+        <button id="btn-add-bot" class="btn-small-bot">+ ADD AI BOT</button>
+        <button id="btn-remove-bot" class="btn-small-bot">- REMOVE BOT</button>
+      </div>
+
+      <button id="btn-start-game" class="btn-primary" style="margin-top:0.8rem;">START MISSION</button>
+      <div id="host-hint" style="color:var(--text-muted);font-size:0.75rem;margin-top:0.4rem;">Waiting for host to start mission...</div>
+      
+      <button id="btn-leave-lobby" class="btn-secondary" style="margin-top:0.8rem;">Leave Room</button>
+    </div>
+  </div>
+
+  <!-- 3. GAME OVER & REMATCH SCREEN -->
+  <div id="screen-gameover" class="overlay-screen hidden">
+    <div class="glass-card">
+      <h1 class="game-title">MATCH OVER</h1>
+      <div id="winner-announcement" class="subtitle" style="font-size:1.15rem;color:var(--primary-cyan);font-weight:700;">
+        🏆 Champion: Pilot
+      </div>
+
+      <div class="input-label" style="text-align:center;">Final Standings</div>
+      <div id="final-scoreboard" class="player-roster" style="max-height:220px;">
+        <!-- Standings injected via JS -->
+      </div>
+
+      <button id="btn-rematch" class="btn-primary">PLAY AGAIN (REMATCH)</button>
+      <button id="btn-return-lobby" class="btn-secondary">Return to Lobby</button>
+    </div>
+  </div>
+
+  <!-- Error Toast -->
+  <div id="error-toast" class="hidden">An error occurred</div>
+
+  <!-- Application Entry Point -->
+  <script type="module" src="./src/client/main.ts"></script>
+</body>
+</html>
